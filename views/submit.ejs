@@ -9,11 +9,24 @@
     <form action="/submit" method="POST">
 
       <div class="form-group">
-        <input type="text"  name="secret" placeholder="What's your secret?" class="form-control text-center" >
+        <input type="text" class="form-control text-center" name="secret" placeholder="What's your secret?">
       </div>
       <button type="submit" class="btn btn-dark">Submit</button>
     </form>
-
+    <% if(secrets.length != 0){ %>
+      <hr>
+        <h1 class="display-3">Your Secrets</h1>
+        <form  action="/submit/delete" method="post">
+          <div class="form-group">
+            <select class="form-control text-center" name="secret">
+              <% secrets.forEach(function(secret){ %>
+                <option value="<%= secret %>"><%= secret %></option>
+              <% }); %>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-dark">Delete Secret</button>
+        </form>
+  <%  } %>
 
   </div>
 </div>

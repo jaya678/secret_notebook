@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema ({
   email: String,
   password: String,
   googleId: String,
-  secret: String
+  secret: Array
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -115,42 +115,59 @@ app.get("/register", function(req, res){
   res.render("register");
 });
 
-app.get("/secrets", function(req, res){
-  User.find({"secret": {$ne: null}}, function(err, foundUsers){
-    if (err){
-      console.log(err);
-    } else {
-      if (foundUsers) {
-        res.render("secrets", {usersWithSecrets: foundUsers});
+app.get("/secrets",function(req,res){
+  User.find({secret:{$ne:null}},function (err, users){
+    if(!err){
+      if (users){
+        res.render("secrets",{usersWithSecrets:users});
+      }else {
+        console.log(err);
       }
+    }else {
+      console.log(err);
     }
   });
 });
 
-app.get("/submit", function(req, res){
-  if (req.isAuthenticated()){
-    res.render("submit");
-  } else {
+app.route("/submit")
+.get(function (req,res){
+  if(req.isAuthenticated()){
+    User.findById(req.user.id,function (err,foundUser){
+      if(!err){
+        res.render("submit",{secrets:foundUser.secret});
+      }
+    })
+  }else {
     res.redirect("/login");
+  }
+})
+.post(function (req, res){
+  if(req.isAuthenticated()){
+    User.findById(req.user.id,function (err, user){
+      user.secret.push(req.body.secret);
+      user.save(function (){
+        res.redirect("/secrets");
+      });
+    });
+ 
+  }else {
+   res.redirect("/login");
   }
 });
 
-app.post("/submit", function(req, res){
-
-  const submittedSecret = req.body.secret;
-
-  User.findById(req.user.id, function(err, foundUser){
-    if (err) {
-      console.log(err);
-    } else {
-      if (foundUser) {
-        foundUser.secret = submittedSecret;
-        foundUser.save(function(){
-          res.redirect("/secrets");
-        });
-      }
-    }
-  });
+app.post("/submit/delete",function (req, res){
+  if(req.isAuthenticated()){
+    User.findById(req.user.id, function (err,foundUser){
+      foundUser.secret.splice(foundUser.secret.indexOf(req.body.secret),1);
+      foundUser.save(function (err) {
+        if(!err){
+          res.redirect("/submit");
+        }
+      });
+    });
+  }else {
+    res.redirect("/login");
+  }
 });
 
 app.get("/logout", function(req, res){
@@ -191,12 +208,6 @@ app.post("/login", function(req, res){
   });
 
 });
-
-
-
-
-
-
 
 app.listen(3000, function() {
   console.log("Server started on port 3000.");
